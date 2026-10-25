@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>エリア別ホテル指標（月次ビューア）</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1f2933; --sub:#5f6b7a; --line:#e1e5ea; --acc:#1f6feb; --up:#1a7f37; --down:#c62828; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:14px; }
+  header { padding:16px 24px 8px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .lead { color:var(--sub); font-size:12.5px; margin:0; }
+  .wrap { padding:0 24px 32px; display:grid; gap:14px; grid-template-columns: minmax(520px, 1.1fr) minmax(420px, 1fr); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .full { grid-column:1 / -1; }
+  .controls { display:flex; flex-wrap:wrap; gap:18px; align-items:flex-start; }
+  .cal { display:grid; grid-template-columns: 48px repeat(12, 44px); gap:4px; align-items:center; }
+  .cal .y { font-weight:600; color:var(--sub); font-size:12px; }
+  .cal button { height:40px; border:1px solid var(--line); background:#fff; border-radius:6px; cursor:pointer; font-size:12px; padding:2px 0; line-height:1.1; }
+  .cal button:disabled { background:#f1f2f4; color:#b8bec6; cursor:default; }
+  .cal button.sel { background:var(--acc); color:#fff; border-color:var(--acc); }
+  .cal .dots { display:block; font-size:8.5px; letter-spacing:0.5px; color:#8a94a3; margin-top:2px; }
+  .cal button.sel .dots { color:#dbe7ff; }
+  .nav { display:flex; gap:6px; align-items:center; margin-top:8px; }
+  .nav button, .seg button { border:1px solid var(--line); background:#fff; border-radius:6px; padding:6px 10px; cursor:pointer; font-size:13px; }
+  .nav button:disabled { color:#b8bec6; cursor:default; }
+  .nav input { font-size:13px; padding:4px 6px; border:1px solid var(--line); border-radius:6px; }
+  .grp label { display:block; font-size:12px; color:var(--sub); margin-bottom:4px; }
+  .seg { display:inline-flex; }
+  .seg button { border-radius:0; margin-left:-1px; }
+  .seg button:first-child { border-radius:6px 0 0 6px; margin-left:0; }
+  .seg button:last-child { border-radius:0 6px 6px 0; }
+  .seg button.sel { background:var(--acc); color:#fff; border-color:var(--acc); position:relative; z-index:1; }
+  .legendrow { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub); margin:6px 0 2px; flex-wrap:wrap; }
+  .bar { width:220px; height:10px; border-radius:3px; border:1px solid var(--line); }
+  #map { width:100%; height:auto; display:block; }
+  #map path { stroke:#666; stroke-width:0.4; cursor:pointer; }
+  #map path:hover { stroke:#000; stroke-width:1.2; }
+  .maptitle { font-weight:700; font-size:15px; margin:0 0 2px; }
+  .note { font-size:11.5px; color:var(--sub); margin:4px 0 0; }
+  .warn { font-size:12px; color:#8a5a00; background:#fff7e0; border:1px solid #f2dca0; padding:6px 8px; border-radius:6px; margin:6px 0; }
+  table { border-collapse:collapse; width:100%; font-size:12.5px; }
+  th, td { border-bottom:1px solid var(--line); padding:5px 6px; text-align:right; white-space:nowrap; }
+  th { background:#f3f5f8; font-weight:600; color:#3b4652; position:sticky; top:0; }
+  td.l, th.l { text-align:left; white-space:normal; }
+  td.hl { background:#eef4ff; font-weight:600; }
+  .up { color:var(--up); } .down { color:var(--down); } .na { color:#9aa3ad; }
+  .src { font-size:11px; color:var(--sub); }
+  .src a { color:var(--sub); }
+  .scroll { max-height:420px; overflow:auto; }
+  #tip { position:fixed; pointer-events:none; background:rgba(25,30,38,0.95); color:#fff; padding:8px 10px; border-radius:6px; font-size:12px; max-width:360px; display:none; z-index:10; line-height:1.5; }
+  #tip .s { color:#c9d1db; font-size:11px; word-break:break-all; }
+  h2 { font-size:15px; margin:0 0 8px; }
+  details summary { cursor:pointer; font-weight:600; }
+  .pill { display:inline-block; font-size:10.5px; padding:1px 6px; border-radius:9px; background:#eef1f5; color:#4a5563; margin-right:4px; }
+  .ok { background:#e5f5ea; color:#1a7f37; } .ng { background:#fdeaea; color:#b42318; } .part { background:#fff4d6; color:#8a5a00; }
+  @media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>エリア別ホテル指標（月次ビューア）</h1>
+  <p class="lead">観光庁「宿泊旅行統計調査」の都道府県×宿泊施設タイプ別の値と、ホテル系J-REIT・事業会社・観光協会の月次公表値。数値はすべて一次資料からの転記か、その公表値どうしの差・比（算出方法は各行に記載）。取れなかった月・項目は (未) と理由を表示。</p>
+</header>
+<div class="wrap">
+  <div class="card full">
+    <div class="controls">
+      <div class="grp">
+        <label>月（クリックで切替。「観」＝観光庁の公表あり、「+n」＝他ソースn件。マウスを載せると内訳：い=いちご 星=星野 J=JHR イ=インヴィンシブル ポ=ポラリス 京=京都市観光協会 森=森トラスト）</label>
+        <div class="cal" id="cal"></div>
+        <div class="nav">
+          <button id="prev" title="前の月">◀ 前月</button>
+          <input type="month" id="mpick">
+          <button id="next" title="次の月">次月 ▶</button>
+          <span class="note" id="monthnote"></span>
+        </div>
+      </div>
+      <div class="grp">
+        <label>宿泊施設タイプ（観光庁の区分）</label>
+        <div class="seg" id="typeSeg"></div>
+        <label style="margin-top:10px">指標</label>
+        <div class="seg" id="metricSeg"></div>
+        <label style="margin-top:10px">地図の色</label>
+        <div class="seg" id="colorSeg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="maptitle" id="mapTitle"></p>
+    <p class="note" id="mapSub"></p>
+    <div id="mapWarn"></div>
+    <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="legendrow" id="legend"></div>
+    <p class="note" id="mapSrc"></p>
+  </div>
+
+  <div class="card">
+    <h2 id="metroTitle">主要都市圏</h2>
+    <div id="metro"></div>
+    <p class="note" id="metroNote"></p>
+  </div>
+
+  <div class="card full">
+    <h2>他のソース（各社・各団体の公表区分のまま。観光庁タイプへの読み替えはしていない）</h2>
+    <div id="others"></div>
+  </div>
+
+  <div class="card full">
+    <details>
+      <summary>ホテル別の開示値（いちご・星野・森トラスト）</summary>
+      <div style="margin:8px 0"><label class="note">都道府県で絞り込み：<select id="hotelPref"></select></label></div>
+      <div class="scroll" id="hotels"></div>
+    </details>
+  </div>
+
+  <div class="card full">
+    <h2>ソース一覧（取得できたもの・できなかったもの）</h2>
+    <div id="sources"></div>
+    <p class="note" id="foot"></p>
+  </div>
+</div>
+<div id="tip"></div>
+<script>
+const D = /*__DATA__*/null;
+const NUMERIC = new Set(["当月", "前年同月", "前年差・比", "施設数", "客室数"]);
+const R = D.rows.map(r => { const o = {}; D.keys.forEach((k, i) => o[k] = NUMERIC.has(k) ? r[i] : D.strs[r[i]]); return o; });
+const TYPES = ["全体", "旅館", "リゾート", "ビジネス", "シティ"];
+const METRICS = ["OCC", "ADR", "RevPAR", "外国人比率"];
+const SRC_MARK = { M: "観", I: "い", H: "星", J: "J", V: "イ", P: "ポ", K: "京", T: "森" };
+const SCALE = { OCC: 10, 外国人比率: 10, ADR: 20, RevPAR: 20 };
+const st = { month: null, type: "全体", metric: "OCC", color: "yoy" };
+
+const num = v => (v === "" || v === null || v === undefined) ? null : Number(v);
+const has = v => num(v) !== null && !Number.isNaN(num(v));
+function fmtVal(v, unit) {
+  if (!has(v)) return '<span class="na">(未)</span>';
+  v = num(v);
+  return unit === "円" ? Math.round(v).toLocaleString("ja-JP") + "円" : v.toFixed(1) + "%";
+}
+function fmtChg(v, unit) {
+  if (!has(v)) return '<span class="na">(未)</span>';
+  v = num(v);
+  const cls = v > 0 ? "up" : v < 0 ? "down" : "";
+  return `<span class="${cls}">${v > 0 ? "+" : ""}${v.toFixed(1)}${unit}</span>`;
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const link = u => String(u).split(" / ").map(x => x.startsWith("http") ? `<a href="${esc(x)}" target="_blank" rel="noopener">${esc(x)}</a>` : esc(x)).join(" / ");
+
+// 色：前年差は RdYlGn の発散、水準は青の連続
+const RYG = ["#a50026", "#d73027", "#f46d43", "#fdae61", "#fee08b", "#ffffbf", "#d9ef8b", "#a6d96a", "#66bd63", "#1a9850", "#006837"];
+const BLU = ["#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", "#4292c6", "#2171b5", "#08519c", "#08306b"];
+function lerp(cs, t) {
+  t = Math.max(0, Math.min(1, t));
+  const x = t * (cs.length - 1), i = Math.min(cs.length - 2, Math.floor(x)), f = x - i;
+  const a = cs[i].match(/\w\w/g).map(h => parseInt(h, 16)), b = cs[i + 1].match(/\w\w/g).map(h => parseInt(h, 16));
+  return "rgb(" + a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",") + ")";
+}
+
+function monthsWith(key) { return new Set(R.filter(r => r.出典キー === key && has(r.当月)).map(r => r.対象月)); }
+const AVAIL = Object.fromEntries(Object.keys(SRC_MARK).map(k => [k, monthsWith(k)]));
+
+function buildCalendar() {
+  const cal = document.getElementById("cal");
+  const years = [...new Set(D.months.map(m => m.slice(0, 4)))];
+  cal.innerHTML = "<span></span>" + Array.from({ length: 12 }, (_, i) => `<span class="y" style="text-align:center">${i + 1}月</span>`).join("");
+  years.forEach(y => {
+    cal.insertAdjacentHTML("beforeend", `<span class="y">${y}年</span>`);
+    for (let m = 1; m <= 12; m++) {
+      const ym = `${y}-${String(m).padStart(2, "0")}`;
+      const ok = D.months.includes(ym);
+      const srcs = ok ? Object.keys(SRC_MARK).filter(k => AVAIL[k].has(ym)) : [];
+      const dots = srcs.length ? (srcs.includes("M") ? "観" : "") + (srcs.filter(k => k !== "M").length ? "+" + srcs.filter(k => k !== "M").length : "") : "";
+      const title = srcs.map(k => SRC_MARK[k]).join(" ");
+      cal.insertAdjacentHTML("beforeend", `<button data-m="${ym}" ${ok ? "" : "disabled"} title="${title}">${m}月<span class="dots">${dots}</span></button>`);
+    }
+  });
+  cal.querySelectorAll("button[data-m]").forEach(b => b.onclick = () => setState({ month: b.dataset.m }));
+  const mp = document.getElementById("mpick");
+  mp.min = D.months[0]; mp.max = D.months[D.months.length - 1];
+  mp.onchange = () => { if (D.months.includes(mp.value)) setState({ month: mp.value }); };
+  document.getElementById("prev").onclick = () => step(-1);
+  document.getElementById("next").onclick = () => step(1);
+  document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return; if (e.key === "ArrowLeft") step(-1); if (e.key === "ArrowRight") step(1); });
+}
+function step(d) { const i = D.months.indexOf(st.month) + d; if (i >= 0 && i < D.months.length) setState({ month: D.months[i] }); }
+
+function buildSeg(id, items, key, labels) {
+  const el = document.getElementById(id);
+  el.innerHTML = items.map(v => `<button data-v="${v}">${labels ? labels[v] : v}</button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.onclick = () => setState({ [key]: b.dataset.v }));
+}
+
+function buildMap() {
+  const svg = document.getElementById("map");
+  const S = D.svg;
+  svg.setAttribute("viewBox", `0 0 ${S.w} ${S.h}`);
+  const [x, y, w, h] = S.inset;
+  svg.innerHTML = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#aaa" stroke-width="0.8"/>` +
+    `<text x="${x + 4}" y="${y + 12}" font-size="11" fill="#666">沖縄県</text>` +
+    Object.entries(S.paths).map(([n, d]) => `<path data-n="${n}" d="${d}"/>`).join("");
+  const tip = document.getElementById("tip");
+  svg.querySelectorAll("path").forEach(p => {
+    p.addEventListener("mousemove", e => { tip.innerHTML = tipHtml(p.dataset.n); tip.style.display = "block"; tip.style.left = Math.min(e.clientX + 14, innerWidth - 380) + "px"; tip.style.top = (e.clientY + 14) + "px"; });
+    p.addEventListener("mouseleave", () => tip.style.display = "none");
+  });
+}
+
+// 地図に載せるレコード：OCC・外国人比率は観光庁（タイプ別）、ADR・RevPARはいちご＋星野の都道府県集計（全体のみ）
+function mapRecords() {
+  const m = st.month, t = st.type, k = st.metric;
+  if (k === "OCC" || k === "外国人比率")
+    return R.filter(r => r.出典キー === "M" && r.エリア区分 === "都道府県" && r.対象月 === m && r.タイプ === t && r.指標 === k);
+  if (t !== "全体") return [];
+  return R.filter(r => r.出典キー === "R" && r.対象月 === m && r.指標 === k);
+}
+function nationalRecord() {
+  return R.find(r => r.出典キー === "M" && r.エリア区分 === "全国" && r.対象月 === st.month && r.タイプ === st.type && r.指標 === st.metric);
+}
+
+let CUR = {};
+function renderMap() {
+  const recs = mapRecords();
+  CUR = Object.fromEntries(recs.map(r => [r.エリア, r]));
+  const k = st.metric, yoy = st.color === "yoy";
+  const unitChg = (k === "ADR" || k === "RevPAR") ? "%" : "pt";
+  const vals = recs.map(r => num(yoy ? r["前年差・比"] : r.当月)).filter(v => v !== null && !Number.isNaN(v));
+  const lo = Math.min(...vals), hi = Math.max(...vals), L = SCALE[k];
+  const colorOf = r => {
+    const v = r ? num(yoy ? r["前年差・比"] : r.当月) : null;
+    if (v === null || Number.isNaN(v)) return "#e3e3e3";
+    return yoy ? lerp(RYG, (v + L) / (2 * L)) : lerp(BLU, hi > lo ? (v - lo) / (hi - lo) : 0.5);
+  };
+  document.querySelectorAll("#map path").forEach(p => p.setAttribute("fill", colorOf(CUR[p.dataset.n])));
+  const [y, mm] = st.month.split("-");
+  const typeLabel = (k === "ADR" || k === "RevPAR") ? "" : `・${st.type}`;
+  document.getElementById("mapTitle").textContent = `${y}年${Number(mm)}月　${k}${typeLabel}　${yoy ? "前年同月" + (unitChg === "pt" ? "差" : "比") : "当月の水準"}`;
+  const nat = nationalRecord();
+  let sub = "";
+  if (k === "OCC" || k === "外国人比率") {
+    sub = "観光庁 宿泊旅行統計調査（都道府県別）" + (nat && has(nat.当月) ? `　全国 ${fmtVal(nat.当月, "%")}（前年同月差 ${fmtChg(nat["前年差・比"], "pt")}）` : "");
+  } else {
+    sub = "いちごホテルリート＋星野リゾート・リートのホテル別開示を所在都道府県で客室数加重（前年同月と比べられるホテルのみ）";
+  }
+  document.getElementById("mapSub").innerHTML = sub;
+  const warn = [];
+  if (!recs.some(r => has(r.当月))) {
+    if ((k === "ADR" || k === "RevPAR") && st.type !== "全体") warn.push("(未)：ADR・RevPARはタイプ別の公表値がない（観光庁は客室単価を調査しておらず、REITの区分は観光庁のタイプと一致しない）。タイプ「全体」で表示できます。");
+    else {
+      const why = R.find(r => r.出典キー === "M" && r.対象月 === st.month && r.エリア区分 === "都道府県" && !has(r.当月));
+      warn.push(why ? why.備考 : "(未)：この月の都道府県別の公表値がない");
+    }
+  }
+  if ((k === "OCC" || k === "外国人比率") && st.month >= "2026-01") warn.push("2026年1月分から観光庁が層化基準を変更（従業者数→客室数）。前年差には見直しの影響が含まれ得る。");
+  if (k === "外国人比率") warn.push("外国人比率＝外国人延べ宿泊者数÷延べ宿泊者数（観光庁公表の人泊数から算出）。");
+  document.getElementById("mapWarn").innerHTML = warn.map(w => `<div class="warn">${w}</div>`).join("");
+  const lg = document.getElementById("legend");
+  if (yoy) {
+    lg.innerHTML = `<span class="down">-${L}${unitChg}以下</span><span class="bar" style="background:linear-gradient(90deg,${RYG.join(",")})"></span><span class="up">+${L}${unitChg}以上</span><span>　灰色＝(未)</span>`;
+  } else if (vals.length) {
+    const f = v => (k === "ADR" || k === "RevPAR") ? Math.round(v).toLocaleString() + "円" : v.toFixed(1) + "%";
+    lg.innerHTML = `<span>${f(lo)}</span><span class="bar" style="background:linear-gradient(90deg,${BLU.join(",")})"></span><span>${f(hi)}</span><span>　灰色＝(未)</span>`;
+  } else lg.innerHTML = "";
+  const urls = [...new Set(recs.map(r => r.出典URL).join(" / ").split(" / ").filter(Boolean))];
+  document.getElementById("mapSrc").innerHTML = urls.length ? "出典：" + urls.map(u => link(u)).join(" / ") + `（取得 ${D.retrieved}）` : "";
+}
+
+function tipHtml(name) {
+  const r = CUR[name];
+  const k = st.metric, u = (k === "ADR" || k === "RevPAR") ? "円" : "%", cu = u === "円" ? "%" : "pt";
+  if (!r) return `<b>${esc(name)}</b><br>(未)：この条件の値なし`;
+  let h = `<b>${esc(name)}</b>　${esc(r.対象月)}　${esc(k)}${r.タイプ ? "・" + esc(r.タイプ) : ""}<br>当月 ${fmtVal(r.当月, u)}　前年同月 ${fmtVal(r.前年同月, u)}　差・比 ${fmtChg(r["前年差・比"], cu)}`;
+  if (r.施設数) h += `<br>${esc(r.施設数)}軒・${Number(r.客室数).toLocaleString()}室`;
+  if (r.備考) h += `<br><span class="s">${esc(r.備考)}</span>`;
+  h += `<br><span class="s">根拠：${esc(r.差の根拠)}<br>出典：${esc(r.出典URL)}（取得 ${esc(r.取得日)}）</span>`;
+  return h;
+}
+
+function renderMetro() {
+  const k = st.metric, m = st.month;
+  const el = document.getElementById("metro");
+  const [y, mm] = m.split("-");
+  if (k === "OCC" || k === "外国人比率") {
+    document.getElementById("metroTitle").textContent = `主要都市圏のタイプ別 ${k}（${y}年${Number(mm)}月、観光庁）`;
+    const get = (p, t) => R.find(r => r.出典キー === "M" && r.エリア === p && r.対象月 === m && r.タイプ === t && r.指標 === k);
+    let h = `<table><tr><th class="l"></th>${TYPES.map(t => `<th>${t}</th>`).join("")}</tr>`;
+    D.focus.forEach(p => {
+      h += `<tr><td class="l">${p}</td>` + TYPES.map(t => {
+        const r = get(p, t);
+        const c = r && has(r.当月) ? `${fmtVal(r.当月, "%")}<br>${fmtChg(r["前年差・比"], "pt")}` : '<span class="na">(未)</span>';
+        return `<td class="${t === st.type ? "hl" : ""}">${c}</td>`;
+      }).join("") + "</tr>";
+    });
+    el.innerHTML = h + "</table>";
+    document.getElementById("metroNote").innerHTML = "上段＝当月、下段＝前年同月差（pt）。選択中のタイプを強調。出典：" + link(R.find(r => r.出典キー === "M" && r.指標 === k && r.対象月 === m)?.出典URL || "（この月は都道府県別の公表なし）") + `（取得 ${D.retrieved}）`;
+  } else {
+    document.getElementById("metroTitle").textContent = `主要都市圏の ${k}（${y}年${Number(mm)}月、いちご＋星野の都道府県集計）`;
+    let h = `<table><tr><th class="l"></th><th>軒数</th><th>客室数</th><th>当月</th><th>前年同月</th><th>前年比</th></tr>`;
+    D.focus.filter(p => p !== "全国").forEach(p => {
+      const r = R.find(r => r.出典キー === "R" && r.エリア === p && r.対象月 === m && r.指標 === k);
+      h += r ? `<tr><td class="l">${p}</td><td>${r.施設数}</td><td>${Number(r.客室数).toLocaleString()}</td><td>${fmtVal(r.当月, "円")}</td><td>${fmtVal(r.前年同月, "円")}</td><td>${fmtChg(r["前年差・比"], "%")}</td></tr>`
+             : `<tr><td class="l">${p}</td><td colspan="5" class="na" style="text-align:left">(未)：前年同月と比べられる両REITのホテルなし</td></tr>`;
+    });
+    el.innerHTML = h + "</table>";
+    document.getElementById("metroNote").innerHTML = "ADR＝客室数加重RevPAR÷加重OCC。タイプ別は公表区分がないため(未)。ホテルの内訳は地図のツールチップか下の「ホテル別」を参照。";
+  }
+}
+
+function renderOthers() {
+  const k = st.metric, m = st.month;
+  const keys = ["J", "V", "P", "K"];
+  const rows = R.filter(r => keys.includes(r.出典キー) && r.対象月 === m && (r.指標 === k || (!has(r.当月) && r.備考.startsWith("(未)") && r.指標 === "OCC" && r.エリア.startsWith("（"))));
+  const u = (k === "ADR" || k === "RevPAR") ? "円" : "%", cu = u === "円" ? "%" : "pt";
+  let h = `<table><tr><th class="l">公表者</th><th class="l">エリア・区分</th><th>施設数</th><th>当月</th><th>前年同月</th><th>前年差・比</th><th class="l">根拠・備考</th><th class="l">出典（取得日）</th></tr>`;
+  const byKey = {};
+  rows.forEach(r => (byKey[r.出典キー] = byKey[r.出典キー] || []).push(r));
+  keys.forEach(key => {
+    const rs = byKey[key];
+    if (!rs) {
+      const pub = { J: "ジャパン・ホテル・リート", V: "インヴィンシブル投資法人", P: "ポラリス・ホールディングス", K: "京都市観光協会" }[key];
+      const why = R.find(r => r.出典キー === key && r.対象月 === m && !has(r.当月));
+      h += `<tr><td class="l">${pub}</td><td class="l" colspan="5"><span class="na">${why ? esc(why.備考) : `(未)：この月・指標（${k}）の公表値なし`}</span></td><td class="l"></td><td class="l src">${why ? link(why.出典URL) : ""}</td></tr>`;
+      return;
+    }
+    rs.forEach(r => {
+      const area = r.エリア + (r.公表区分 && r.公表区分 !== r.エリア ? `（${r.公表区分}）` : "");
+      h += `<tr><td class="l">${esc(r.公表者)}</td><td class="l">${esc(area)}</td><td>${esc(r.施設数)}</td><td>${has(r.当月) ? fmtVal(r.当月, u) : '<span class="na">(未)</span>'}</td>` +
+           `<td>${fmtVal(r.前年同月, u)}</td><td>${fmtChg(r["前年差・比"], cu)}</td><td class="l src">${esc(r.差の根拠)}${r.備考 ? "　" + esc(r.備考) : ""}</td><td class="l src">${link(r.出典URL)}（${esc(r.取得日)}）</td></tr>`;
+    });
+  });
+  document.getElementById("others").innerHTML = h + "</table>" +
+    (st.type !== "全体" ? `<p class="note">タイプ「${st.type}」を選択中ですが、上表は各社の区分のまま表示しています（観光庁のタイプには読み替えていません）。</p>` : "");
+}
+
+function renderHotels() {
+  const m = st.month;
+  const sel = document.getElementById("hotelPref");
+  const hs = R.filter(r => ["I", "H", "T"].includes(r.出典キー) && r.対象月 === m && r.エリア区分 === "ホテル");
+  const prefs = [...new Set(hs.map(r => r.都道府県).filter(Boolean))].sort();
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">すべて</option>` + prefs.map(p => `<option ${p === cur ? "selected" : ""}>${p}</option>`).join("");
+  sel.onchange = renderHotels;
+  const byH = {};
+  hs.filter(r => !sel.value || r.都道府県 === sel.value).forEach(r => { const id = r.出典キー + "|" + r.エリア; (byH[id] = byH[id] || { r, v: {} }).v[r.指標] = r; });
+  let h = `<table><tr><th class="l">REIT</th><th class="l">ホテル</th><th class="l">都道府県</th><th>客室数</th><th>OCC</th><th>差</th><th>ADR</th><th>前年比</th><th>RevPAR</th><th>前年比</th><th class="l">備考</th><th class="l">出典</th></tr>`;
+  Object.values(byH).forEach(({ r, v }) => {
+    const o = v.OCC || {}, a = v.ADR || {}, p = v.RevPAR || {};
+    h += `<tr><td class="l">${esc(r.公表者)}</td><td class="l">${esc(r.エリア)}${r.公表区分 ? `<br><span class="pill">${esc(r.公表区分)}</span>` : ""}</td><td class="l">${esc(r.都道府県)}</td><td>${esc(r.客室数)}</td>` +
+         `<td>${fmtVal(o.当月, "%")}</td><td>${fmtChg(o["前年差・比"], "pt")}</td><td>${fmtVal(a.当月, "円")}</td><td>${fmtChg(a["前年差・比"], "%")}</td><td>${fmtVal(p.当月, "円")}</td><td>${fmtChg(p["前年差・比"], "%")}</td>` +
+         `<td class="l src">${esc([o.備考, a.備考].filter(Boolean)[0] || "")}</td><td class="l src">${link(r.出典URL)}</td></tr>`;
+  });
+  const none = R.filter(r => r.出典キー === "T" && r.対象月 === m && !has(r.当月));
+  document.getElementById("hotels").innerHTML = h + "</table>" + none.map(r => `<p class="note">森トラストリート：${esc(r.備考)}</p>`).join("");
+}
+
+function renderSources() {
+  let h = `<table><tr><th class="l">公表者</th><th class="l">資料</th><th class="l">区分</th><th class="l">指標</th><th class="l">対象月</th><th class="l">状況</th><th class="l">理由・制約</th></tr>`;
+  D.sources.forEach(s => {
+    const cls = s.状況.startsWith("取得") || s.状況 === "集計値" ? (s.状況.includes("未") ? "part" : "ok") : s.状況 === "一部取得" ? "part" : "ng";
+    h += `<tr><td class="l">${esc(s.公表者)}</td><td class="l">${s.URL.startsWith("http") ? `<a href="${esc(s.URL)}" target="_blank" rel="noopener">${esc(s.資料)}</a>` : esc(s.資料)}</td><td class="l">${esc(s.区分)}</td><td class="l">${esc(s.指標)}</td><td class="l">${esc(s.月)}</td><td class="l"><span class="pill ${cls}">${esc(s.状況)}</span></td><td class="l src">${esc(s.理由)}</td></tr>`;
+  });
+  document.getElementById("sources").innerHTML = h + "</table>";
+  document.getElementById("foot").innerHTML = `取得日：${D.retrieved}（JST）。金額は円。ADR・RevPARの定義（サービス料の扱いなど）はソースごとに異なるため、ソース間の水準比較には注意。境界データ：dataofjapan/land。`;
+}
+
+function setState(patch) {
+  Object.assign(st, patch);
+  document.querySelectorAll("#cal button[data-m]").forEach(b => b.classList.toggle("sel", b.dataset.m === st.month));
+  for (const [id, key] of [["typeSeg", "type"], ["metricSeg", "metric"], ["colorSeg", "color"]])
+    document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle("sel", b.dataset.v === st[key]));
+  const i = D.months.indexOf(st.month);
+  document.getElementById("prev").disabled = i <= 0;
+  document.getElementById("next").disabled = i >= D.months.length - 1;
+  document.getElementById("mpick").value = st.month;
+  document.getElementById("monthnote").textContent = "← → キーでも切替";
+  history.replaceState(null, "", `#${st.month}/${encodeURIComponent(st.type)}/${encodeURIComponent(st.metric)}/${st.color}`);
+  renderMap(); renderMetro(); renderOthers(); renderHotels();
+}
+
+buildCalendar();
+buildSeg("typeSeg", TYPES, "type");
+buildSeg("metricSeg", METRICS, "metric");
+buildSeg("colorSeg", ["yoy", "level"], "color", { yoy: "前年同月差・比", level: "当月の水準" });
+buildMap();
+renderSources();
+const [hm, ht, hk, hc] = decodeURIComponent(location.hash.slice(1)).split("/");
+const latestMlit = [...AVAIL.M].filter(m => R.some(r => r.出典キー === "M" && r.エリア区分 === "都道府県" && r.対象月 === m && has(r.当月))).sort().pop();
+setState({ month: D.months.includes(hm) ? hm : latestMlit, type: TYPES.includes(ht) ? ht : "全体", metric: METRICS.includes(hk) ? hk : "OCC", color: ["yoy", "level"].includes(hc) ? hc : "yoy" });
+</script>
+</body>
+</html>

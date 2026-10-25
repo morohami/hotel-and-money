@@ -244,6 +244,12 @@ def _norm(s: str) -> str:
 
 def ichigo_hotels(refresh: bool) -> list[Hotel]:
     pdf_path = fetch("ichigo_monthly", CONFIG["reit_files"]["ichigo_pdf"], refresh)
+    lookup = ichigo_lookup(refresh)
+    return parse_ichigo_pdf(pdf_path, CONFIG["reit_files"]["ichigo_pdf"], lookup)
+
+
+def ichigo_lookup(refresh: bool):
+    """物件一覧（Excel）からホテル名→（都道府県, 客室数）を引く関数を返す。"""
     xlsx = fetch("ichigo_hoteldata", CONFIG["reit_files"]["ichigo_xlsx"], refresh)
     master = {}
     ws = openpyxl.load_workbook(xlsx, read_only=True, data_only=True)["(1)物件一覧"]
@@ -259,6 +265,10 @@ def ichigo_hotels(refresh: bool) -> list[Hotel]:
                 return v
         return ("", None)
 
+    return lookup
+
+
+def parse_ichigo_pdf(pdf_path: Path, src: str, lookup) -> list[Hotel]:
     hotels = []
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
@@ -270,8 +280,9 @@ def ichigo_hotels(refresh: bool) -> list[Hotel]:
                             pref, rooms = lookup(cur)
                             hotels.append(Hotel("いちごホテルリート", cur, pref, rooms,
                                                 vals["occ"][0], vals["occ"][1], vals["adr"][0], vals["adr"][1],
-                                                vals["revpar"][0], vals["revpar"][1], CONFIG["reit_files"]["ichigo_pdf"]))
-                        cur, vals = (re.sub(r"\s+", "", re.sub(r"※\d+", "", r[0])) if r[0] != "__END__" else None), {}
+                                                vals["revpar"][0], vals["revpar"][1], src))
+                        name = re.sub(r"[（(]\s*[）)]", "", re.sub(r"\s+", "", re.sub(r"※\d+", "", r[0])))
+                        cur, vals = (name if r[0] != "__END__" else None), {}
                     if cur and len(r) >= 4:
                         metric = str(r[1] or "")
                         key = "revpar" if "RevPAR" in metric else "occ" if "稼働率" in metric else "adr" if "ADR" in metric else None
