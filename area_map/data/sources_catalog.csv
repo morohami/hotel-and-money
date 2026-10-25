@@ -1,0 +1,14 @@
+﻿キー,公表者,資料,URL,区分,指標,対象月の範囲,取得状況,理由・制約,取得日
+M,観光庁,宿泊旅行統計調査（推移表・第2次速報・年の確定値・第1次速報）,https://www.mlit.go.jp/kankocho/tokei_hakusyo/shukuhakutokei.html,都道府県×タイプ（旅館・リゾート・ビジネス・シティ・簡易宿所・会社団体）,OCC、延べ・外国人延べ宿泊者数,2025-07～2026-07（都道府県）、2026-08（全国のみ）,取得,ADR・RevPARは調査項目にない,2026-10-26
+I,いちごホテルリート,ホテル運営状況（月次PDF）,https://www.ichigo-hotel.co.jp/ir/news/,ホテル別（27軒）,OCC・ADR・RevPAR（当月・前年同月）,2025-07～2026-08,取得,,2026-10-26
+H,星野リゾート・リート,運営実績データ（Excel）,https://ssl4.eir-parts.net/doc/3287/ir_material_for_fiscal_ym5/195377/00.xlsx,ホテル別・投資区分（星のや・リゾナーレ・界・都市観光ほか）,OCC・ADR・RevPAR,2025-07～2026-08,取得,,2026-10-26
+J,ジャパン・ホテル・リート,ホテル運営実績Excel（変動賃料等導入29ホテル・地域別）,https://www.jhrth.co.jp/file/review_exceldl-973246b76834e8803f8659c458779d6d41f9cd10.xlsx,地域別（8地域）,OCC・ADR・RevPAR（当月と前年増減）,2026-01～2026-08,取得（2025年分は未）,掲載Excelは2026年分のみ。ホテル別のOCC・ADRは非開示,2026-10-26
+V,インヴィンシブル投資法人,月次運用実績（TDnet PDF）,https://www.release.tdnet.info/inbs/140120260925540060.pdf,地域別（7地域＋合計）,OCC・ADR・RevPAR（前年同月比）,2026-08のみ,一部取得,公式サイトが緊急メンテナンス（503）で過去分・ホテル別が取れない。TDnetは直近31日分のみ,2026-10-26
+T,森トラストリート,ホテル運営実績（ウェブページ）,https://www.mt-reit.jp/ja/portfolio/result.html,ホテル別（2軒）,OCC・ADR・RevPAR（当月のみ）,2025-12～2026-07,取得（前年比は未）,前年同月値の掲載なし,2026-10-26
+P,ポラリス・ホールディングス,月次経営レポート（Excel）,https://xml.irpocket.com/C3010/2026/performance_jp.xlsx,エリア別（6エリア・計68軒）と全体,OCC・ADR・RevPAR・インバウンド比率（当年度と前年度の同月値）,2026-04～2026-08（前年比あり）、2025-07・08（値のみ）,取得,2025年9月～2026年3月は掲載なし（2025年度版ExcelのURLは404）,2026-10-26
+K,京都市観光協会,京都市観光協会データ月報,https://www.kyokanko.or.jp/report/hotel202608,京都市・ホテル（主要116～118施設）／旅館（主要21～23施設）,ホテルOCC・ADR・RevPAR、旅館OCC（前年同月差・比）,2025-07～2026-08,取得（外国人比率は未）,外国人比率は要約ページに記載なし（延べ宿泊数のみ）,2026-10-26
+R,いちご・星野（ホテル別開示を集計）,都道府県別集計（客室数加重）,（I・H の各URL）,都道府県,OCC・ADR・RevPAR,2025-07～2026-08,集計値,前年同月と比べられるホテルのみ,2026-10-26
+-,共立メンテナンス（ドーミーイン）,月次レポート,https://www.kyoritsugroup.co.jp/Portals/0/pdf/ir/library/2026_8_monthly-report_jp.pdf,事業セグメント,売上高のみ,,未取得,OCC・ADR・RevPARの記載なし（売上高と前年比のみ）,2026-10-26
+-,藤田観光,IRライブラリ,https://www.fujita-kanko.co.jp/ir/,,,,未取得,月次のOCC・ADRの開示が見つからない（四半期決算資料のみ）,2026-10-26
+-,沖縄振興開発金融公庫,県内主要ホテルの稼働状況,https://www.okinawakouko.go.jp/report/research/re002/index.html,沖縄県・ホテルタイプ別,,年度・半期,未取得,月次ではなく年度・半期の報告。PDFの文字がCIDフォントで抽出できず数値を確認できない,2026-10-26
+-,霞ヶ関ホテルリート,,https://www.kasumigaseki-hotelreit.co.jp/,,,,未取得,ホスト名が解決できず接続不可,2026-10-26

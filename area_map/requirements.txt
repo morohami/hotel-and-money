@@ -1,0 +1,6 @@
+matplotlib>=3.8
+openpyxl>=3.1
+pdfplumber>=0.11
+pillow>=10.0
+requests>=2.31
+shapely>=2.0
